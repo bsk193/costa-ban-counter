@@ -16,24 +16,33 @@
   };
 
   async function request(path) {
-    const response = await fetch(`${API}${path}`, { cache: 'no-store' });
-    let data;
-    try { data = await response.json(); } catch { data = {}; }
-    if (!response.ok) {
-      const error = new Error(data.error || 'The counter service is unavailable.');
-      error.status = response.status;
-      throw error;
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 8000);
+    try {
+      const response = await fetch(`${API}${path}`, {
+        cache: 'no-store',
+        signal: controller.signal,
+      });
+      let data;
+      try { data = await response.json(); } catch { data = {}; }
+      if (!response.ok) {
+        const error = new Error(data.error || 'The counter service is unavailable.');
+        error.status = response.status;
+        throw error;
+      }
+      const value = Number(data.value);
+      if (!Number.isSafeInteger(value) || value < 0) {
+        throw new Error('The counter returned an invalid value.');
+      }
+      return value;
+    } finally {
+      window.clearTimeout(timeout);
     }
-    const value = Number(data.value);
-    if (!Number.isSafeInteger(value) || value < 0) {
-      throw new Error('The counter returned an invalid value.');
-    }
-    return value;
   }
 
   async function readOrInitializeCount() {
     try {
-      return await request(`/get/${COUNT_KEY}`);
+      return await request(`/get/${COUNT_KEY}?_=${Date.now()}`);
     } catch (error) {
       if (error.status !== 404) throw error;
       return request(`/set/${COUNT_KEY}?value=${STARTING_COUNT}`);
@@ -42,9 +51,9 @@
 
   async function readOptionalTimestamp(key) {
     try {
-      return await request(`/get/${key}`);
+      return await request(`/get/${key}?_=${Date.now()}`);
     } catch (error) {
-      if (error.status === 404) return null;
+      if (error.status === 404 || /not found/i.test(error.message)) return null;
       throw error;
     }
   }
@@ -110,7 +119,9 @@
       cleanAddLink();
 
       try {
-        const priorBanAt = await readOptionalTimestamp(LAST_KEY);
+        const priorBanAt = count > STARTING_COUNT + 1
+          ? await readOptionalTimestamp(LAST_KEY)
+          : null;
         const now = Math.floor(Date.now() / 1000);
         if (priorBanAt !== null) {
           await request(`/set/${PREVIOUS_KEY}?value=${priorBanAt}`);
@@ -142,18 +153,28 @@
     try {
       const count = await readOrInitializeCount();
       nodes.count.textContent = String(count).padStart(4, '0');
+
+      let timingError = false;
       try {
-        [lastBanAt, previousBanAt] = await Promise.all([
-          readOptionalTimestamp(LAST_KEY),
-          readOptionalTimestamp(PREVIOUS_KEY),
-        ]);
-        setStatus('ONLINE', 'online');
+        lastBanAt = await readOptionalTimestamp(LAST_KEY);
       } catch {
         lastBanAt = null;
-        previousBanAt = null;
-        setStatus('COUNT LIVE / TIME OFFLINE', 'warning');
+        timingError = true;
       }
+
+      if (count > STARTING_COUNT + 1 && lastBanAt !== null) {
+        try {
+          previousBanAt = await readOptionalTimestamp(PREVIOUS_KEY);
+        } catch {
+          previousBanAt = null;
+          timingError = true;
+        }
+      } else {
+        previousBanAt = null;
+      }
+
       renderTiming();
+      setStatus(timingError ? 'COUNT LIVE / TIME OFFLINE' : 'ONLINE', timingError ? 'warning' : 'online');
     } catch {
       nodes.count.textContent = '----';
       nodes.lastEvent.textContent = 'Shared event data is currently unreachable.';
