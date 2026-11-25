@@ -17,7 +17,8 @@
 
   async function request(path) {
     const response = await fetch(`${API}${path}`, { cache: 'no-store' });
-    const data = await response.json();
+    let data;
+    try { data = await response.json(); } catch { data = {}; }
     if (!response.ok) {
       const error = new Error(data.error || 'The counter service is unavailable.');
       error.status = response.status;
@@ -30,12 +31,12 @@
     return value;
   }
 
-  async function readOrInitialize(key, startingValue) {
+  async function readOrInitializeCount() {
     try {
-      return await request(`/get/${key}`);
+      return await request(`/get/${COUNT_KEY}`);
     } catch (error) {
       if (error.status !== 404) throw error;
-      return request(`/set/${key}?value=${startingValue}`);
+      return request(`/set/${COUNT_KEY}?value=${STARTING_COUNT}`);
     }
   }
 
@@ -48,18 +49,18 @@
     }
   }
 
-  function formatDuration(milliseconds) {
-    const minutes = Math.floor(Math.max(0, milliseconds) / 60000);
-    const days = Math.floor(minutes / 1440);
-    const hours = Math.floor((minutes % 1440) / 60);
-    const remaining = minutes % 60;
+  function formatDuration(seconds) {
+    const totalMinutes = Math.floor(Math.max(0, seconds) / 60);
+    const days = Math.floor(totalMinutes / 1440);
+    const hours = Math.floor((totalMinutes % 1440) / 60);
+    const minutes = totalMinutes % 60;
     const hourText = `${String(hours).padStart(2, '0')}h`;
-    const minuteText = `${String(remaining).padStart(2, '0')}m`;
+    const minuteText = `${String(minutes).padStart(2, '0')}m`;
     return days > 0 ? `${days}d ${hourText} ${minuteText}` : `${hourText} ${minuteText}`;
   }
 
-  function formatTimestamp(timestamp) {
-    return new Date(timestamp).toLocaleString(undefined, {
+  function formatTimestamp(unixSeconds) {
+    return new Date(unixSeconds * 1000).toLocaleString(undefined, {
       day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
     });
   }
@@ -76,7 +77,7 @@
       return;
     }
 
-    nodes.elapsed.textContent = formatDuration(Date.now() - lastBanAt);
+    nodes.elapsed.textContent = formatDuration(Date.now() / 1000 - lastBanAt);
     nodes.lastEvent.textContent = `Last event logged ${formatTimestamp(lastBanAt)}.`;
 
     if (previousBanAt === null) {
@@ -101,37 +102,60 @@
     nodes.statusWrap.dataset.state = state;
   }
 
+  async function recordBan() {
+    setStatus('ADDING', 'syncing');
+    try {
+      const count = await request(`/hit/${COUNT_KEY}`);
+      nodes.count.textContent = String(count).padStart(4, '0');
+      cleanAddLink();
+
+      try {
+        const priorBanAt = await readOptionalTimestamp(LAST_KEY);
+        const now = Math.floor(Date.now() / 1000);
+        if (priorBanAt !== null) {
+          await request(`/set/${PREVIOUS_KEY}?value=${priorBanAt}`);
+        }
+        await request(`/set/${LAST_KEY}?value=${now}`);
+        previousBanAt = priorBanAt;
+        lastBanAt = now;
+        renderTiming();
+        setStatus('ONLINE', 'online');
+      } catch {
+        setStatus('COUNTED / TIME SYNC ERROR', 'warning');
+        nodes.lastEvent.textContent = 'Ban counted; timer sync failed.';
+      }
+    } catch {
+      nodes.count.textContent = '----';
+      nodes.lastEvent.textContent = 'Ban could not be recorded. Try the link again.';
+      setStatus('OFFLINE', 'offline');
+    }
+  }
+
   async function start() {
     setStatus('SYNCING', 'syncing');
-    try {
-      const params = new URLSearchParams(window.location.search);
-      const addOne = params.get('add') === '1';
-      let count;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('add') === '1') {
+      await recordBan();
+      return;
+    }
 
-      if (addOne) {
-        await readOrInitialize(COUNT_KEY, STARTING_COUNT);
-        previousBanAt = await readOptionalTimestamp(LAST_KEY);
-        count = await request(`/hit/${COUNT_KEY}`);
-        lastBanAt = Date.now();
-        if (previousBanAt !== null) await request(`/set/${PREVIOUS_KEY}?value=${previousBanAt}`);
-        await request(`/set/${LAST_KEY}?value=${lastBanAt}`);
-        cleanAddLink();
-      } else {
-        [count, lastBanAt, previousBanAt] = await Promise.all([
-          readOrInitialize(COUNT_KEY, STARTING_COUNT),
+    try {
+      const count = await readOrInitializeCount();
+      nodes.count.textContent = String(count).padStart(4, '0');
+      try {
+        [lastBanAt, previousBanAt] = await Promise.all([
           readOptionalTimestamp(LAST_KEY),
           readOptionalTimestamp(PREVIOUS_KEY),
         ]);
+        setStatus('ONLINE', 'online');
+      } catch {
+        lastBanAt = null;
+        previousBanAt = null;
+        setStatus('COUNT LIVE / TIME OFFLINE', 'warning');
       }
-
-      nodes.count.textContent = String(count).padStart(4, '0');
-      setStatus('ONLINE', 'online');
       renderTiming();
-      window.setInterval(renderTiming, 1000);
-    } catch (_error) {
+    } catch {
       nodes.count.textContent = '----';
-      nodes.elapsed.textContent = '--h --m';
-      nodes.interval.textContent = '--h --m';
       nodes.lastEvent.textContent = 'Shared event data is currently unreachable.';
       nodes.intervalNote.textContent = 'No timing data available.';
       setStatus('OFFLINE', 'offline');
@@ -139,4 +163,5 @@
   }
 
   start();
+  window.setInterval(renderTiming, 1000);
 })();
