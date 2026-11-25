@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f6f0e5">
+  <meta name="description" content="An extremely official Costa ban counter.">
+  <title>Costa Ban Counter</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <main class="page">
+    <header class="masthead">
+      <span class="stamp" aria-hidden="true">CBC</span>
+      <span class="eyebrow">THE TOTALLY UNOFFICIAL TRACKER</span>
+    </header>
+
+    <section class="counter-card" aria-labelledby="title">
+      <div class="card-topline"><span>LIVE TALLY</span><span class="status"><i></i><span id="api-status">CONNECTING</span></span></div>
+      <h1 id="title">Costa<br><em>Ban</em> Counter</h1>
+      <div class="count-wrap" aria-live="polite" aria-atomic="true">
+        <span class="count" id="count">…</span>
+        <span class="count-label">and counting</span>
+      </div>
+      <p class="note">The number speaks for itself.</p>
+      <div class="card-bottom"><span>EST. WHEN IT GOT OUT OF HAND</span><span>№ 004</span></div>
+    </section>
+
+    <footer class="footer"><span>For entertainment purposes. Keep it moving.</span></footer>
+  </main>
+</body>
+</html>
