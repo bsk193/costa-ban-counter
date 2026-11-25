@@ -3,31 +3,54 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#f6f0e5">
-  <meta name="description" content="An extremely official Costa ban counter.">
-  <title>Costa Ban Counter</title>
+  <meta name="theme-color" content="#080e0b">
+  <meta name="description" content="Unofficial Rob Run Costa ban counter and event timing log.">
+  <title>Rob Run // Costa Ban Counter</title>
   <link rel="stylesheet" href="styles.css">
   <script src="app.js" defer></script>
 </head>
 <body>
-  <main class="page">
-    <header class="masthead">
-      <span class="stamp" aria-hidden="true">CBC</span>
-      <span class="eyebrow">THE TOTALLY UNOFFICIAL TRACKER</span>
+  <div class="shell">
+    <header class="topbar">
+      <a class="brand" href="./" aria-label="Rob Run Costa Ban Counter">
+        <span class="brand-mark">RR<span>/</span></span>
+        <span class="brand-copy"><strong>ROB RUN</strong><small>FIELD OPS // BAN LOG</small></span>
+      </a>
+      <div class="system-state"><i></i><span id="api-status">CONNECTING</span></div>
     </header>
 
-    <section class="counter-card" aria-labelledby="title">
-      <div class="card-topline"><span>LIVE TALLY</span><span class="status"><i></i><span id="api-status">CONNECTING</span></span></div>
-      <h1 id="title">Costa<br><em>Ban</em> Counter</h1>
-      <div class="count-wrap" aria-live="polite" aria-atomic="true">
-        <span class="count" id="count">…</span>
-        <span class="count-label">and counting</span>
-      </div>
-      <p class="note">The number speaks for itself.</p>
-      <div class="card-bottom"><span>EST. WHEN IT GOT OUT OF HAND</span><span>№ 004</span></div>
-    </section>
+    <main>
+      <section class="hero" aria-labelledby="title">
+        <div class="section-label"><span>01</span> LIVE EVENT MONITOR <span class="label-line"></span><span class="label-tag">COSTA</span></div>
+        <h1 id="title">COSTA BAN<br><span>COUNTER</span></h1>
 
-    <footer class="footer"><span>For entertainment purposes. Keep it moving.</span></footer>
-  </main>
+        <div class="count-panel">
+          <div class="count-panel-top"><span>GLOBAL BAN EVENTS</span><span>COUNT / <b>001</b></span></div>
+          <div class="count-display" aria-live="polite" aria-atomic="true"><span id="count">----</span><span class="count-unit">BANS</span></div>
+          <div class="count-meter" aria-hidden="true"><span></span></div>
+          <div class="count-panel-bottom"><span>START VALUE <b>004</b></span><span>SYNC <b>SHARED</b></span></div>
+        </div>
+      </section>
+
+      <section class="telemetry" aria-label="Ban timing telemetry">
+        <article class="metric-card">
+          <div class="metric-label"><span class="metric-index">TIME-01</span><span>ELAPSED</span></div>
+          <h2>Since last ban</h2>
+          <output class="metric-value" id="elapsed">--h --m</output>
+          <p class="metric-note" id="last-event">No new ban events logged yet.</p>
+        </article>
+        <article class="metric-card">
+          <div class="metric-label"><span class="metric-index">TIME-02</span><span>EVENT GAP</span></div>
+          <h2>Between new bans</h2>
+          <output class="metric-value" id="interval">--h --m</output>
+          <p class="metric-note" id="interval-note">Waiting for two new ban events.</p>
+        </article>
+      </section>
+
+      <div class="system-footer"><span>ROB RUN // UNOFFICIAL TRACKER</span><span>NO MANUAL INPUT <b>●</b></span></div>
+    </main>
+
+    <footer class="page-footer"><span>FIELD LOG / COSTA</span><span>END OF TRANSMISSION</span></footer>
+  </div>
 </body>
 </html>

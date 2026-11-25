@@ -1,13 +1,16 @@
-# Costa Ban Counter
+# Rob Run Costa Ban Counter
 
-A tiny standalone counter page. The shared tally starts at 4, and there is no visible add button. To add one, open the page with `?add=1` at the end of its URL. It increments once, then cleans the address bar.
+A standalone, unofficial Rob Run ban tally. The shared count starts at 4. The page uses a dark terminal-style layout and records timing for new ban events.
 
-## Publish on GitHub Pages
+## Hidden increment link
 
-Create a public repository called `costa-ban-counter` and upload the files in this folder to the repository root. Then open **Settings → Pages**, select **Deploy from a branch**, choose **main** and **/(root)**, and save. The site will be available at `https://bsk193.github.io/costa-ban-counter/` after GitHub Pages finishes publishing.
+Open the live page with `?add=1` at the end of its URL to add one ban. The URL removes that query after a successful increment, so refreshing does not add another.
 
-The hidden increment link will be `https://bsk193.github.io/costa-ban-counter/?add=1`.
+- Site: https://bsk193.github.io/costa-ban-counter/
+- Add one: https://bsk193.github.io/costa-ban-counter/?add=1
 
-## Shared count
+## Ban timing
 
-The page uses CountAPI's public counter endpoint so visitors see the same number without a server of our own. The count is initialized to 4 the first time the page is opened. The service documents its counters as public and shared, and anyone who knows the key can read or change it. The key is visible in this page's JavaScript, so this is suitable for a casual tally rather than a protected or tamper-proof record.
+After the first new ban is recorded, the page shows how long it has been since that event. After the next one, it also shows the elapsed time between the two. The original count of 4 has no timestamps, so timing starts with new events recorded through the hidden link.
+
+The shared values use CountAPI's public counter service. The keys are visible in `app.js`; anyone who finds them can read or change the values. This is intended as a casual game tally, not protected data.
